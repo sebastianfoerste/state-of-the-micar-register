@@ -17,14 +17,17 @@ def test_totals_match_frozen_snapshot():
     assert m["register_totals"]["ncasp"] == 162
 
 
-def test_machine_readable_and_landing_counts():
+def test_link_shape_candidate_and_landing_counts():
     m = analyze(FIXTURE)
-    assert m["machine_readable"] == 114
-    assert m["landing_page"] == 584
-    assert m["pdf"] == 254
-    # 114 of 953 is ~12%.
-    assert 11.5 <= m["machine_readable_pct"] <= 12.5
-    assert 60.5 <= m["landing_page_pct"] <= 62.0
+    assert m["structured_link_candidates"] == 114
+    assert m["landing_or_unspecified_links"] == 584
+    assert m["pdf_link_candidates"] == 254
+    # 114 of 953 register links are structured-link candidates.
+    assert 11.5 <= m["structured_link_candidate_pct"] <= 12.5
+    assert 60.5 <= m["landing_or_unspecified_link_pct"] <= 62.0
+    assert m["format_classification_basis"] == "register_link_shape"
+    assert m["content_verified_documents"] == 0
+    assert m["verified_inline_xbrl_documents"] == 0
 
 
 def test_member_states_sorted_ireland_first():
