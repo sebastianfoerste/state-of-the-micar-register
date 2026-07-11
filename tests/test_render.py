@@ -19,7 +19,8 @@ def test_data_section_contains_headline_numbers():
     section = render_data_section(analyze(FIXTURE))
     assert "953" in section
     assert "114" in section
-    assert "machine-readable" in section
+    assert "register-link shape" in section
+    assert "content-level format verification" in section
     assert "| Member State | White papers | Share |" in section
 
 
@@ -45,3 +46,4 @@ def test_html_is_self_contained_and_has_stat():
     assert "http-equiv" not in page  # no external redirects
     assert "src=" not in page  # no external assets
     assert "%" in page
+    assert "It does not verify the fetched document format" in page
