@@ -1,7 +1,7 @@
-"""Render the generated data section (Markdown) and a shareable HTML page.
+"""Render the generated data section and a shareable HTML page.
 
-Only the block between DATA_START and DATA_END in an edition is generated; the
-narrative around it is human-authored and never touched by the generator.
+Only the block between DATA_START and DATA_END in an edition is generated. The
+narrative around it is human-authored and is not touched by the generator.
 """
 
 from __future__ import annotations
@@ -13,18 +13,18 @@ DATA_START = "<!-- data:start -->"
 DATA_END = "<!-- data:end -->"
 
 _FORMAT_LABELS = {
-    "xhtml/html": "XHTML / HTML (structured, machine-readable)",
-    "json": "JSON (structured, machine-readable)",
-    "docx": "DOCX (structured, machine-readable)",
-    "pdf": "PDF (human-readable, not structured)",
-    "unspecified": "Landing page or bare domain",
+    "xhtml/html": "XHTML / HTML-shaped register link (candidate)",
+    "json": "JSON-shaped register link (candidate)",
+    "docx": "DOCX-shaped register link (candidate)",
+    "pdf": "PDF-shaped register link (candidate)",
+    "unspecified": "Landing page, redirect, or bare domain",
     "none": "No link in register",
 }
 
 _REGISTER_LABELS = {
-    "other-wp": "White papers — other crypto-assets (Title II)",
-    "emt-wp": "White papers — e-money tokens (Title IV)",
-    "art-wp": "White papers — asset-referenced tokens (Title III)",
+    "other-wp": "White papers - other crypto-assets (Title II)",
+    "emt-wp": "White papers - e-money tokens (Title IV)",
+    "art-wp": "White papers - asset-referenced tokens (Title III)",
     "casps": "Authorised CASPs",
     "ncasp": "Non-compliant entities flagged by NCAs",
 }
@@ -38,30 +38,42 @@ def render_data_section(metrics: dict) -> str:
         f"**{metrics['snapshot_date']}**. Figures are reproducible from that commit._"
     )
     lines.append("")
+    lines.append(
+        "_Method boundary: classifications below are inferred from register-link shape. "
+        "They do not verify fetched content, document MIME type, or Inline XBRL conformance._"
+    )
+    lines.append("")
 
     lines.append("#### Headline")
     lines.append("")
+    lines.append(f"- **{total}** crypto-asset white papers in the register.")
     lines.append(
-        f"- **{total}** crypto-asset white papers in the register."
+        f"- **{metrics['structured_link_candidates']}** "
+        f"({metrics['structured_link_candidate_pct']}%) have links shaped like "
+        "XHTML/HTML, JSON, or DOCX candidates."
     )
     lines.append(
-        f"- **{metrics['machine_readable']}** "
-        f"({metrics['machine_readable_pct']}%) are published in a structured, "
-        "machine-readable format."
+        f"- **{metrics['landing_or_unspecified_links']}** "
+        f"({metrics['landing_or_unspecified_link_pct']}%) use a landing page, redirect, "
+        "or bare-domain link whose document format cannot be inferred reliably."
     )
     lines.append(
-        f"- **{metrics['landing_page']}** "
-        f"({metrics['landing_page_pct']}%) link only a landing page or bare domain."
+        f"- **{metrics['pdf_link_candidates']}** "
+        f"({metrics['pdf_link_candidate_pct']}%) have PDF-shaped links."
     )
     lines.append(
-        f"- **{metrics['pdf']}** ({metrics['pdf_pct']}%) link a PDF — "
-        "readable by a person, not queryable at scale."
+        f"- **{metrics['content_verified_documents']}** documents have content-level "
+        "format verification in this snapshot."
+    )
+    lines.append(
+        f"- **{metrics['verified_inline_xbrl_documents']}** documents are verified as "
+        "Inline XBRL XHTML in this snapshot."
     )
     lines.append("")
 
-    lines.append("#### White paper format coverage")
+    lines.append("#### Register-link classification")
     lines.append("")
-    lines.append("| Linked format | Count | Share |")
+    lines.append("| Register-link class | Count | Share |")
     lines.append("| --- | ---: | ---: |")
     for fmt, count in metrics["format_counts"].items():
         share = round(100 * count / total, 1) if total else 0.0
@@ -100,8 +112,8 @@ def update_edition(edition_path: Path, data_section: str) -> None:
 
 
 def _bar_svg(rows: list[tuple[str, int]], total: int, highlight: set[str]) -> str:
-    # Self-contained inline SVG — no external assets, CSP-safe.
-    width, row_h, pad_left, pad_top = 640, 30, 260, 10
+    # Self-contained inline SVG with no external assets.
+    width, row_h, pad_left, pad_top = 640, 30, 285, 10
     height = pad_top * 2 + row_h * len(rows)
     peak = max((count for _, count in rows), default=1) or 1
     bars: list[str] = []
@@ -132,7 +144,7 @@ def render_html(metrics: dict, edition_title: str) -> str:
     ]
     ms_rows = [(state, count) for state, count in metrics["member_states"][:10]]
     total = metrics["total_whitepapers"]
-    fmt_svg = _bar_svg(fmt_rows, total, {"XHTML / HTML"})
+    fmt_svg = _bar_svg(fmt_rows, total, {"XHTML / HTML-shaped register link"})
     ms_svg = _bar_svg(ms_rows, total, set())
     return f"""<!doctype html>
 <html lang="en">
@@ -146,6 +158,7 @@ def render_html(metrics: dict, edition_title: str) -> str:
  h1 {{ font-size: 1.6rem; }} h2 {{ font-size: 1.15rem; margin-top: 2rem; }}
  .lede {{ font-size: 1.05rem; color: #334155; }}
  .stat {{ font-size: 2.4rem; font-weight: 700; color: #c026d3; }}
+ .method {{ padding: .9rem 1rem; background: #f8fafc; border-left: 4px solid #c026d3; }}
  svg {{ max-width: 100%; height: auto; }}
  footer {{ margin-top: 2.5rem; font-size: .85rem; color: #64748b; }}
  a {{ color: #7c3aed; }}
@@ -153,22 +166,24 @@ def render_html(metrics: dict, edition_title: str) -> str:
 </head>
 <body>
 <h1>{html.escape(edition_title)}</h1>
-<p class="lede">Of {total} crypto-asset white papers on the ESMA MiCAR register,
-<span class="stat">{metrics['machine_readable_pct']}%</span> are published in a
-structured, machine-readable format. {metrics['landing_page_pct']}% link only a
-landing page.</p>
-<p>Snapshot: {html.escape(str(metrics['snapshot_date']))}. Public data;
-reproducible from the observatory commit.</p>
-<h2>White paper format coverage</h2>
+<p class="lede">The {metrics['snapshot_date']} ESMA MiCAR register snapshot contains
+{total} crypto-asset white papers. <span class="stat">{metrics['structured_link_candidate_pct']}%</span>
+of register links are shaped like XHTML/HTML, JSON, or DOCX candidates.</p>
+<p class="method"><strong>Method boundary:</strong> this is a register-link analysis.
+It does not verify the fetched document format or Inline XBRL conformance.
+Content-verified documents in this snapshot: {metrics['content_verified_documents']}.</p>
+<h2>Register-link classification</h2>
 {fmt_svg}
 <h2>Home Member States (top 10)</h2>
 {ms_svg}
 <footer>
 Source: <a href="https://github.com/sebastianfoerste/micar-register-observatory">MiCAR
 Register Observatory</a>. Factual observations about a public register; not legal
-advice. Full report:
+advice. Full methodology and report:
 <a href="https://github.com/sebastianfoerste/state-of-the-micar-register">state-of-the-micar-register</a>.
 </footer>
 </body>
 </html>
 """
+
+
