@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from collections import Counter
 
-# Formats the micar-whitepaper-linter can parse deterministically. These are the
-# "structured machine-readable" documents; PDF and bare landing pages are not.
-MACHINE_READABLE = {"xhtml/html", "json", "docx"}
+# These values are candidates inferred from the shape of the register link.
+# They are not verified document formats and do not establish Inline XBRL
+# conformance under Implementing Regulation (EU) 2024/2984.
+STRUCTURED_LINK_CANDIDATES = {"xhtml/html", "json", "docx"}
 
 
 def whitepaper_entries(snapshot: dict) -> list[dict]:
@@ -26,8 +27,19 @@ def analyze(snapshot: dict) -> dict:
         return round(100 * n / total, 1) if total else 0.0
 
     formats = Counter(entry.get("format_class", "none") for entry in whitepapers)
-    machine_readable = sum(formats.get(fmt, 0) for fmt in MACHINE_READABLE)
+    structured_link_candidates = sum(
+        formats.get(fmt, 0) for fmt in STRUCTURED_LINK_CANDIDATES
+    )
     landing = formats.get("unspecified", 0)
+
+    verified = [
+        entry
+        for entry in whitepapers
+        if entry.get("content_verification_status") == "verified"
+    ]
+    verified_ixbrl = sum(
+        1 for entry in verified if entry.get("verified_format") == "inline-xbrl-xhtml"
+    )
 
     member_states = Counter(
         (entry.get("member_state") or "?") for entry in whitepapers
@@ -42,13 +54,16 @@ def analyze(snapshot: dict) -> dict:
     return {
         "snapshot_date": snapshot.get("snapshot_date"),
         "total_whitepapers": total,
+        "format_classification_basis": "register_link_shape",
         "format_counts": dict(formats.most_common()),
-        "machine_readable": machine_readable,
-        "machine_readable_pct": pct(machine_readable),
-        "pdf": formats.get("pdf", 0),
-        "pdf_pct": pct(formats.get("pdf", 0)),
-        "landing_page": landing,
-        "landing_page_pct": pct(landing),
+        "structured_link_candidates": structured_link_candidates,
+        "structured_link_candidate_pct": pct(structured_link_candidates),
+        "pdf_link_candidates": formats.get("pdf", 0),
+        "pdf_link_candidate_pct": pct(formats.get("pdf", 0)),
+        "landing_or_unspecified_links": landing,
+        "landing_or_unspecified_link_pct": pct(landing),
+        "content_verified_documents": len(verified),
+        "verified_inline_xbrl_documents": verified_ixbrl,
         "member_states": member_states.most_common(),
         "register_totals": register_totals,
     }
