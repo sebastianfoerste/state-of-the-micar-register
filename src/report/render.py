@@ -166,7 +166,7 @@ def render_html(metrics: dict, edition_title: str) -> str:
 </head>
 <body>
 <h1>{html.escape(edition_title)}</h1>
-<p class="lede">The {metrics['snapshot_date']} ESMA MiCAR register snapshot contains
+<p class="lede">The {html.escape(str(metrics['snapshot_date']))} ESMA MiCAR register snapshot contains
 {total} crypto-asset white papers. <span class="stat">{metrics['structured_link_candidate_pct']}%</span>
 of register links are shaped like XHTML/HTML, JSON, or DOCX candidates.</p>
 <p class="method"><strong>Method boundary:</strong> this is a register-link analysis.
@@ -185,5 +185,4 @@ advice. Full methodology and report:
 </body>
 </html>
 """
-
 
