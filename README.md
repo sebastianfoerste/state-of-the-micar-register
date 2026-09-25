@@ -1,5 +1,7 @@
 # The State of the MiCAR Register
 
+> **Moved.** This report now lives in [micar-register-observatory](https://github.com/sebastianfoerste/micar-register-observatory), beside the snapshots it measures, with its full history. New editions are published there under [`editions/`](https://github.com/sebastianfoerste/micar-register-observatory/tree/main/editions). This repository is archived.
+
 A quarterly data report on the EU's crypto-asset white paper register. It answers one question with numbers instead of anecdote: how much of the MiCAR register is actually the structured, machine-readable disclosure that Article 109 intends?
 
 The current finding, from the latest snapshot: **of the crypto-asset white papers on the register, only about 12% are published in a structured machine-readable format, and around 61% link nothing but a landing page.**
